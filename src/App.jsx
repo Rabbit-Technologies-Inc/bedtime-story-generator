@@ -43,9 +43,7 @@ function App() {
     claude: {
       name: 'Claude (Anthropic)',
       models: [
-        // { id: 'claude-4-5-opus', name: 'Claude 4.5 Opus (Latest)' },
-        // { id: 'claude-4-5-sonnet', name: 'Claude 4.5 Sonnet' },
-        // { id: 'claude-4-5-haiku', name: 'Claude 4.5 Haiku' },
+        { id: 'claude-sonnet-4-20250514', name: 'Claude Sonnet 4 (Latest)' },
         { id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet (Oct 2024)' },
         { id: 'claude-3-5-sonnet-20240620', name: 'Claude 3.5 Sonnet (Jun 2024)' },
         { id: 'claude-3-opus-20240229', name: 'Claude 3 Opus' },
