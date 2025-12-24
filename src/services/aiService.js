@@ -35,7 +35,7 @@ class AIService {
   }
 
   // OpenAI API Integration
-  async callOpenAI(apiKey, model, messages, systemPrompt) {
+  async callOpenAI(apiKey, model, messages, systemPrompt, temperature = 0.7) {
     try {
       const response = await axios.post(
         `${this.baseURLs.openai}/chat/completions`,
@@ -46,7 +46,7 @@ class AIService {
             ...messages
           ],
           max_tokens: 5000,
-          temperature: 0.9
+          temperature: temperature
         },
         {
           headers: {
@@ -69,7 +69,7 @@ class AIService {
   }
 
   // Claude (Anthropic) API Integration
-  async callClaude(apiKey, model, messages, systemPrompt) {
+  async callClaude(apiKey, model, messages, systemPrompt, temperature = 0.7) {
     try {
       // Validate API key format
       if (!apiKey || !apiKey.startsWith('sk-ant-')) {
@@ -87,6 +87,7 @@ class AIService {
         {
           model: model,
           max_tokens: 4000,
+          temperature: temperature,
           system: systemPrompt,
           messages: claudeMessages
         },
@@ -113,7 +114,7 @@ class AIService {
   }
 
   // Grok (X.AI) API Integration
-  async callGrok(apiKey, model, messages, systemPrompt) {
+  async callGrok(apiKey, model, messages, systemPrompt, temperature = 0.7) {
     try {
       const response = await axios.post(
         `${this.baseURLs.grok}/chat/completions`,
@@ -124,7 +125,7 @@ class AIService {
             ...messages
           ],
           max_tokens: 5000,
-          temperature: 0.9
+          temperature: temperature
         },
         {
           headers: {
@@ -147,7 +148,7 @@ class AIService {
   }
 
   // Gemini (Google) API Integration
-  async callGemini(apiKey, model, messages, systemPrompt) {
+  async callGemini(apiKey, model, messages, systemPrompt, temperature = 0.7) {
     try {
       // Convert messages for Gemini format
       const geminiMessages = messages.map(msg => ({
@@ -168,7 +169,7 @@ class AIService {
           contents: allMessages,
           generationConfig: {
             maxOutputTokens: 5000,
-            temperature: 0.9
+            temperature: temperature
           }
         },
         {
@@ -191,16 +192,16 @@ class AIService {
   }
 
   // Main method to call any AI provider
-  async generateResponse(provider, apiKey, model, messages, systemPrompt) {
+  async generateResponse(provider, apiKey, model, messages, systemPrompt, temperature = 0.7) {
     switch (provider) {
       case 'openai':
-        return await this.callOpenAI(apiKey, model, messages, systemPrompt)
+        return await this.callOpenAI(apiKey, model, messages, systemPrompt, temperature)
       case 'claude':
-        return await this.callClaude(apiKey, model, messages, systemPrompt)
+        return await this.callClaude(apiKey, model, messages, systemPrompt, temperature)
       case 'grok':
-        return await this.callGrok(apiKey, model, messages, systemPrompt)
+        return await this.callGrok(apiKey, model, messages, systemPrompt, temperature)
       case 'gemini':
-        return await this.callGemini(apiKey, model, messages, systemPrompt)
+        return await this.callGemini(apiKey, model, messages, systemPrompt, temperature)
       default:
         return {
           success: false,
@@ -210,7 +211,7 @@ class AIService {
   }
 
   // Test API connection
-  async testConnection(provider, apiKey, model) {
+  async testConnection(provider, apiKey, model, temperature = 0.7) {
     // For Anthropic, try with a basic model first if the selected model fails
     let testModel = model
     if (provider === 'claude' && model.includes('claude-3-5-sonnet-20241022')) {
@@ -222,7 +223,7 @@ class AIService {
     ]
     const systemPrompt = 'You are a helpful assistant. Respond exactly as requested.'
     
-    const result = await this.generateResponse(provider, apiKey, testModel, testMessages, systemPrompt)
+    const result = await this.generateResponse(provider, apiKey, testModel, testMessages, systemPrompt, temperature)
     
     // If basic model works but original model failed, provide helpful message
     if (result.success && testModel !== model) {
@@ -242,7 +243,7 @@ class AIService {
   }
 
   // Execute the full prompt chain
-  async executePromptChain(provider, apiKey, model, promptChain, storyConfig) {
+  async executePromptChain(provider, apiKey, model, promptChain, storyConfig, temperature = 0.7) {
     const results = []
     let conversationHistory = []
 
@@ -284,7 +285,8 @@ class AIService {
           apiKey,
           model,
           conversationHistory,
-          enhancedSystemPrompt
+          enhancedSystemPrompt,
+          temperature
         )
 
         if (!response.success) {

@@ -9,6 +9,7 @@ function App() {
   const [apiConfig, setApiConfig] = useState({
     selectedProvider: 'openai',
     selectedModel: 'gpt-4',
+    temperature: 0.7,
     apiKeys: {
       openai: '',
       claude: '',
@@ -42,14 +43,16 @@ function App() {
     claude: {
       name: 'Claude (Anthropic)',
       models: [
-        { id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet (Latest)' },
-        { id: 'claude-3-5-sonnet-20240620', name: 'Claude 3.5 Sonnet' },
+        // { id: 'claude-4-5-opus', name: 'Claude 4.5 Opus (Latest)' },
+        // { id: 'claude-4-5-sonnet', name: 'Claude 4.5 Sonnet' },
+        // { id: 'claude-4-5-haiku', name: 'Claude 4.5 Haiku' },
+        { id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet (Oct 2024)' },
+        { id: 'claude-3-5-sonnet-20240620', name: 'Claude 3.5 Sonnet (Jun 2024)' },
         { id: 'claude-3-opus-20240229', name: 'Claude 3 Opus' },
         { id: 'claude-3-sonnet-20240229', name: 'Claude 3 Sonnet' },
         { id: 'claude-3-haiku-20240307', name: 'Claude 3 Haiku' },
         { id: 'claude-2.1', name: 'Claude 2.1' },
-        { id: 'claude-2.0', name: 'Claude 2.0' },
-        { id: 'claude-instant-1.2', name: 'Claude Instant 1.2' }
+        { id: 'claude-2.0', name: 'Claude 2.0' }
       ],
       keyLabel: 'Anthropic API Key'
     },
@@ -327,7 +330,7 @@ function App() {
 
     try {
       const model = aiProviders[provider].models[0].id
-      const result = await aiService.testConnection(provider, apiKey, model)
+      const result = await aiService.testConnection(provider, apiKey, model, apiConfig.temperature)
       
       setGenerationState(prev => ({
         ...prev,
@@ -403,7 +406,8 @@ function App() {
         currentApiKey,
         apiConfig.selectedModel,
         promptChain,
-        storyConfig
+        storyConfig,
+        apiConfig.temperature
       )
 
       if (result.success) {
@@ -623,6 +627,56 @@ ${generationState.finalStory}
                 </div>
               </div>
 
+              {/* Temperature Control */}
+              <div className="mb-12">
+                <h3 className="text-xl font-semibold text-gray-800 mb-6 flex items-center gap-2">
+                  <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
+                  Model Temperature
+                  <span className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-3 py-1 rounded-full text-sm font-bold">
+                    {apiConfig.temperature}
+                  </span>
+                </h3>
+                <div className="bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-200 rounded-2xl p-6">
+                  <div className="mb-4">
+                    <div className="flex justify-between items-center mb-3">
+                      <span className="text-sm font-medium text-blue-700">Conservative</span>
+                      <span className="text-sm font-medium text-purple-700">Creative</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.1"
+                      value={apiConfig.temperature}
+                      onChange={(e) => setApiConfig(prev => ({ ...prev, temperature: parseFloat(e.target.value) }))}
+                      className="w-full h-3 bg-gradient-to-r from-blue-200 to-purple-200 rounded-lg appearance-none cursor-pointer slider"
+                      style={{
+                        background: `linear-gradient(to right, #3b82f6 0%, #8b5cf6 ${apiConfig.temperature * 100}%, #e5e7eb ${apiConfig.temperature * 100}%, #e5e7eb 100%)`
+                      }}
+                    />
+                    <div className="flex justify-between text-xs text-gray-500 mt-1">
+                      <span>0.0</span>
+                      <span>0.2</span>
+                      <span>0.4</span>
+                      <span>0.6</span>
+                      <span>0.8</span>
+                      <span>1.0</span>
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm text-gray-600 mb-2">
+                      🎨 <strong>Temperature:</strong> {apiConfig.temperature} 
+                      {apiConfig.temperature <= 0.3 && ' - More focused and consistent'}
+                      {apiConfig.temperature > 0.3 && apiConfig.temperature <= 0.7 && ' - Balanced creativity and coherence'}
+                      {apiConfig.temperature > 0.7 && ' - More creative and varied'}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      Lower values make the AI more predictable, higher values make it more creative and varied
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               {/* API Keys Section */}
               <div className="mb-12">
                 <h3 className="text-xl font-semibold text-gray-800 mb-6 flex items-center gap-2">
@@ -699,7 +753,7 @@ ${generationState.finalStory}
                   <h4 className="text-2xl font-bold text-purple-800 mb-2">Current Configuration</h4>
                   <p className="text-purple-600">Your AI setup is ready to create amazing stories</p>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 text-center">
                   <div className="bg-white/60 rounded-2xl p-4">
                     <div className="text-sm font-medium text-purple-600 mb-1">Provider</div>
                     <div className="text-lg font-bold text-purple-800">{aiProviders[apiConfig.selectedProvider].name}</div>
@@ -707,6 +761,10 @@ ${generationState.finalStory}
                   <div className="bg-white/60 rounded-2xl p-4">
                     <div className="text-sm font-medium text-purple-600 mb-1">Model</div>
                     <div className="text-lg font-bold text-purple-800">{aiProviders[apiConfig.selectedProvider].models.find(m => m.id === apiConfig.selectedModel)?.name}</div>
+                  </div>
+                  <div className="bg-white/60 rounded-2xl p-4">
+                    <div className="text-sm font-medium text-purple-600 mb-1">Temperature</div>
+                    <div className="text-lg font-bold text-purple-800">{apiConfig.temperature}</div>
                   </div>
                   <div className="bg-white/60 rounded-2xl p-4">
                     <div className="text-sm font-medium text-purple-600 mb-1">API Key</div>
