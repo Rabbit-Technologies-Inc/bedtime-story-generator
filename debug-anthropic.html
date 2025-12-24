@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Anthropic API Debug</title>
+</head>
+<body>
+    <h1>Anthropic API Debug Test</h1>
+    <button onclick="testAnthropicAPI()">Test Anthropic API</button>
+    <div id="result"></div>
+
+    <script>
+        async function testAnthropicAPI() {
+            const apiKey = prompt('Enter your Anthropic API key:');
+            if (!apiKey) return;
+
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Testing...';
+
+            try {
+                const response = await fetch('/api/anthropic/v1/messages', {
+                    method: 'POST',
+                    headers: {
+                        'x-api-key': apiKey,
+                        'Content-Type': 'application/json',
+                        'anthropic-version': '2023-06-01',
+                        'anthropic-dangerous-direct-browser-access': 'true'
+                    },
+                    body: JSON.stringify({
+                        model: 'claude-3-5-sonnet-20241022',
+                        max_tokens: 100,
+                        system: 'You are a helpful assistant.',
+                        messages: [
+                            {
+                                role: 'user',
+                                content: 'Hello! Please respond with "Connection successful" to test the API.'
+                            }
+                        ]
+                    })
+                });
+
+                console.log('Response status:', response.status);
+                console.log('Response headers:', [...response.headers.entries()]);
+                
+                const data = await response.json();
+                console.log('Response data:', data);
+
+                if (response.ok) {
+                    resultDiv.innerHTML = `<div style="color: green;">Success: ${JSON.stringify(data, null, 2)}</div>`;
+                } else {
+                    resultDiv.innerHTML = `<div style="color: red;">Error ${response.status}: ${JSON.stringify(data, null, 2)}</div>`;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                resultDiv.innerHTML = `<div style="color: red;">Network Error: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>

@@ -3,22 +3,24 @@ import axios from 'axios'
 // API Service for different AI providers
 class AIService {
   constructor() {
+    // Use proxy URLs in development, direct URLs in production
+    const isDev = import.meta.env.DEV
     this.baseURLs = {
-      openai: 'https://api.openai.com/v1',
-      claude: 'https://api.anthropic.com/v1',
-      grok: 'https://api.x.ai/v1',
-      gemini: 'https://generativelanguage.googleapis.com/v1beta'
+      openai: isDev ? '/api/openai/v1' : 'https://api.openai.com/v1',
+      claude: isDev ? '/api/anthropic/v1' : 'https://api.anthropic.com/v1',
+      grok: isDev ? '/api/xai/v1' : 'https://api.x.ai/v1',
+      gemini: isDev ? '/api/gemini/v1beta' : 'https://generativelanguage.googleapis.com/v1beta'
     }
   }
 
   // Enhanced error handling
   handleError(error) {
     let errorMessage = error.message
-    
     if (error.code === 'ERR_NETWORK') {
-      errorMessage = 'Network error - this might be due to CORS restrictions when testing locally. In production, you would need to proxy API calls through your backend.'
+      errorMessage = 'Network error - if you see CORS issues, make sure your development server is running with proxy configuration. Restart your dev server if needed.'
     } else if (error.response?.status === 401) {
-      errorMessage = 'Invalid API key. Please check your API key and try again.'
+      const details = error.response?.data?.error?.message || error.response?.data?.message || ''
+      errorMessage = `Invalid API key (401 Unauthorized). ${details}. Please check your API key format and permissions.`
     } else if (error.response?.status === 429) {
       errorMessage = 'Rate limit exceeded. Please wait a moment and try again.'
     } else if (error.response?.status === 403) {
@@ -69,6 +71,11 @@ class AIService {
   // Claude (Anthropic) API Integration
   async callClaude(apiKey, model, messages, systemPrompt) {
     try {
+      // Validate API key format
+      if (!apiKey || !apiKey.startsWith('sk-ant-')) {
+        throw new Error('Invalid Anthropic API key format. API key should start with "sk-ant-"')
+      }
+
       // Convert messages format for Claude
       const claudeMessages = messages.map(msg => ({
         role: msg.role === 'assistant' ? 'assistant' : 'user',
@@ -79,7 +86,7 @@ class AIService {
         `${this.baseURLs.claude}/messages`,
         {
           model: model,
-          max_tokens: 5000,
+          max_tokens: 4000,
           system: systemPrompt,
           messages: claudeMessages
         },
@@ -87,7 +94,8 @@ class AIService {
           headers: {
             'x-api-key': apiKey,
             'Content-Type': 'application/json',
-            'anthropic-version': '2023-06-01'
+            'anthropic-version': '2023-06-01',
+            'anthropic-dangerous-direct-browser-access': 'true'
           }
         }
       )
@@ -203,12 +211,25 @@ class AIService {
 
   // Test API connection
   async testConnection(provider, apiKey, model) {
+    // For Anthropic, try with a basic model first if the selected model fails
+    let testModel = model
+    if (provider === 'claude' && model.includes('claude-3-5-sonnet-20241022')) {
+      testModel = 'claude-3-haiku-20240307' // Try with a more basic model first
+    }
+    
     const testMessages = [
       { role: 'user', content: 'Hello! Please respond with "Connection successful" to test the API.' }
     ]
     const systemPrompt = 'You are a helpful assistant. Respond exactly as requested.'
     
-    return await this.generateResponse(provider, apiKey, model, testMessages, systemPrompt)
+    const result = await this.generateResponse(provider, apiKey, testModel, testMessages, systemPrompt)
+    
+    // If basic model works but original model failed, provide helpful message
+    if (result.success && testModel !== model) {
+      result.content += ` (Note: Tested with ${testModel} instead of ${model}. Your API key may not have access to the requested model.)`
+    }
+    
+    return result
   }
 
   // Replace placeholders in prompt with actual values
