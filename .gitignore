@@ -22,3 +22,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Sensitive files
+.env
+*.env
+service-account*.json
+*-credentials.json

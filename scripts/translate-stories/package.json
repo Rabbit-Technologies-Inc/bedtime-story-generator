@@ -1,0 +1,13 @@
+{
+  "name": "translate-stories",
+  "version": "1.0.0",
+  "description": "Translate Hindi stories to Hinglish and English using Claude AI",
+  "type": "module",
+  "scripts": {
+    "translate": "node translate.js"
+  },
+  "dependencies": {
+    "googleapis": "^144.0.0",
+    "dotenv": "^16.4.5"
+  }
+}
